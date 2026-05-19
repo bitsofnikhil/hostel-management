@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Room Attendance – Hostel Management</title><link rel="stylesheet" href="/css/style.css">
+    <style>
+        .rooms-grid{display:flex;gap:20px;overflow-x:auto;overflow-y:visible;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:0 0 14px;touch-action:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+        .rooms-grid::-webkit-scrollbar{height:10px}.rooms-grid::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}
+        .room-card{background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.08);overflow:hidden;border:1px solid #e5e7eb;flex:0 0 100%;scroll-snap-align:start}
+        .swipe-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;color:#64748b;font-weight:700}
+        .swipe-buttons{display:flex;gap:8px}.swipe-buttons button{border:0;background:#10156f;color:#fff;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+        .room-head{background:#20258f;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+        .room-head h3{margin:0;font-size:24px;color:#fff}.room-meta{font-size:14px;opacity:.9;margin-top:4px}.present-box{background:rgba(255,255,255,.2);padding:8px 14px;border-radius:10px;text-align:center;min-width:70px}.present-box strong{font-size:28px;display:block}
+        .student-row{padding:16px 22px;border-bottom:1px solid #e5e7eb;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}.student-name{font-weight:800;font-size:17px}.student-reg{font-size:13px;color:#64748b;margin-top:4px}
+        .status-buttons{display:flex;gap:8px;flex-wrap:wrap}.status-btn{border:0;border-radius:10px;padding:10px 16px;font-weight:800;cursor:pointer;background:#f1f5f9}.status-btn.present.active{background:#dcfce7;color:#166534}.status-btn.absent.active{background:#fee2e2;color:#991b1b}.status-btn.leave.active{background:#e5e7eb;color:#111827}
+        .room-complaint-box{padding:16px 22px;background:#f8fafc;border-bottom:1px solid #e5e7eb}.room-complaint-box label{display:block;font-weight:800;color:#10156f;margin-bottom:8px}.room-complaint-row{display:flex;gap:8px;align-items:stretch}.room-complaint-box textarea{width:100%;min-height:78px;resize:vertical;border:2px solid #e5e7eb;border-radius:12px;padding:12px;font-size:15px;box-sizing:border-box}.voice-room-btn{min-width:95px;border:2px solid #10156f;background:#fff;color:#10156f;border-radius:12px;font-weight:800;cursor:pointer}.voice-room-btn.listening{background:#10156f;color:#fff}.voice-status{font-size:12px;color:#64748b;margin-top:6px}
+        .room-actions{padding:14px 22px;background:#fff;display:flex;gap:10px;flex-wrap:wrap}.btn-green{background:#238636;color:white}.btn-red{background:#d1242f;color:white}.btn-grey{background:#f3f4f6;color:#111827}
+        .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.toolbar .btn{min-width:160px}.export-btn{background:#ff6b00;color:#fff}
+        .start-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:14px 0 4px}.start-field{display:flex;flex-direction:column;gap:6px}.start-field label{font-size:12px;font-weight:900;color:#10156f;text-transform:uppercase;letter-spacing:.04em}.start-preview{margin-top:8px;font-weight:800;color:#334155;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px}
+        @media(max-width:700px){.rooms-grid{display:block;overflow:visible;scroll-snap-type:none;touch-action:auto;padding-bottom:0}.room-card{flex-basis:auto;margin-bottom:16px;scroll-snap-align:none}.student-row{grid-template-columns:1fr}.status-buttons{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}.status-btn{padding:12px 8px}.topbar{flex-direction:column;align-items:flex-start}.room-complaint-row{flex-direction:column}.voice-room-btn{min-height:48px}.swipe-help{display:none}}
+    </style>
+
+    <meta name="theme-color" content="#10156f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hostel Mgmt">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+</head>
+<body>
+<div class="app-layout">
+<aside class="sidebar">
+    <div class="sidebar-header"><span class="logo-icon">🏠</span><div class="logo-text"><h2>Hostel Mgmt</h2><span>Warden Portal</span></div></div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-title">Main Menu</div>
+        <a href="/dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/attendance.html" class="nav-link" data-page="attendance"><span class="nav-icon">🌙</span> Attendance</a>
+        <a href="/students.html" class="nav-link" data-page="students"><span class="nav-icon">👨‍🎓</span> Students</a>
+        <a href="/fees.html" class="nav-link" data-page="fees"><span class="nav-icon">💰</span> Fee Tracking</a>
+        <a href="/complaints.html" class="nav-link" data-page="complaints"><span class="nav-icon">📋</span> Complaints</a>
+        <a href="/mess.html" class="nav-link" data-page="mess"><span class="nav-icon">🍽️</span> Mess Menu</a>
+        <div class="nav-section-title">Settings</div><a href="/rooms.html" class="nav-link" data-page="rooms"><span class="nav-icon">🚪</span> Manage Rooms</a>
+    </nav>
+    <div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="sidebarUserInitial">W</div><div class="user-details"><div class="user-name" id="sidebarUserName">Warden</div><div class="user-role" id="sidebarUserRole">WARDEN</div></div></div><button class="btn-logout" onclick="logout()">🚪 Logout</button></div>
+</aside>
+<div class="main-content">
+    <div class="topbar">
+        <h1>🌙 Room Attendance</h1>
+        <div class="topbar-actions">
+            <input type="date" id="attendanceDate" class="form-control" style="width:190px">
+        </div>
+    </div>
+    <div class="page-content">
+        <div class="card" style="margin-bottom:16px">
+            <div class="card-header"><h3>Room-wise Attendance</h3></div>
+            <div class="card-body">
+                <p style="color:var(--text-secondary);margin-top:0">Mark attendance room by room. Choose the block and room where sir wants to start; default is <b>Block B Room 101</b> if available. After that, remaining rooms continue in order.</p>
+                <div class="start-controls">
+                    <div class="start-field"><label>Show Block</label><select id="blockFilter" class="form-control" style="width:180px"><option value="">All Blocks</option></select></div>
+                    <div class="start-field"><label>Start Block</label><select id="startBlockSelect" class="form-control" style="width:180px"><option value="">Auto</option></select></div>
+                    <div class="start-field"><label>Start Room</label><select id="startRoomSelect" class="form-control" style="width:200px"><option value="">Auto</option></select></div>
+                </div>
+                <div id="startPreview" class="start-preview">Default start: Block B Room 101</div>
+                <div class="toolbar">
+                    <button class="btn btn-green" onclick="markAllVisible('PRESENT')">Mark All Present</button>
+                    <button class="btn btn-red" onclick="markAllVisible('ABSENT')">Mark All Absent</button>
+                    <button class="btn btn-primary" id="saveAttendanceBtn" onclick="saveVisibleAttendance()">💾 Save Attendance</button>
+                    <button class="btn export-btn" onclick="exportAttendance('excel')">Export Excel</button>
+                    <button class="btn export-btn" onclick="exportAttendance('pdf')">Export PDF</button>
+                </div>
+            </div>
+        </div>
+        <div class="swipe-help"><span>Swipe left/right on desktop. On mobile, rooms are stacked for smooth vertical scrolling.</span><div class="swipe-buttons"><button onclick="moveRoom(-1)">← Previous</button><button onclick="moveRoom(1)">Next →</button></div></div>
+        <div class="rooms-grid" id="roomsGrid"><div class="loading"><div class="spinner"></div><span>Loading rooms...</span></div></div>
+    </div>
+</div>
+</div>
+<script src="/js/app.js"></script>
+<script>
+Auth.requireAuth(); initSidebar('attendance');
+let roomsData=[]; const statuses={}; const roomComplaintDrafts={};
+let roomVoiceRecognition=null; let roomVoiceTarget=null; let roomVoiceBase='';
+const today=DateUtil.today(); document.getElementById('attendanceDate').value=today;
+function esc(s){return (s||'').toString().replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function getBlock(room){ return (room.block||'A').toString().trim().toUpperCase(); }
+function getRoomNo(room){ return (room.roomNumber||'').toString().trim(); }
+function blockOptions(blocks){ return blocks.map(b=>`<option value="${esc(b)}">Block ${esc(b)}</option>`).join(''); }
+function fillAllBlockSelects(blocks){
+    const opts=blockOptions(blocks);
+    document.getElementById('blockFilter').innerHTML='<option value="">All Blocks</option>'+opts;
+    document.getElementById('startBlockSelect').innerHTML='<option value="">Auto: Block B Room 101</option>'+opts;
+}
+function fillStartBlockSelect(blocks){
+    document.getElementById('startBlockSelect').innerHTML='<option value="">Auto: Block B Room 101</option>'+blockOptions(blocks);
+}
+async function loadBlocks(){
+    const rooms=await API.get('/rooms');
+    const blocks=[...new Set(rooms.map(getBlock))].sort();
+    fillAllBlockSelects(blocks);
+    if(blocks.includes('B')) document.getElementById('startBlockSelect').value='B';
+}
+async function loadRooms(){
+    const date=document.getElementById('attendanceDate').value;
+    const block=document.getElementById('blockFilter').value;
+    const q=`?date=${date}${block?`&block=${encodeURIComponent(block)}`:''}`;
+    try{
+        const status=await API.get('/attendance/status?date='+encodeURIComponent(date));
+        const saveBtn=document.getElementById('saveAttendanceBtn');
+        if(saveBtn){
+            const isToday=date===DateUtil.today();
+            saveBtn.disabled=!!(isToday && status.marked);
+            saveBtn.textContent=(isToday && status.marked)?'✅ Today Attendance Saved':'💾 Save Attendance';
+            saveBtn.title=(isToday && status.marked)?'Today attendance is already saved. Change date if you need to edit a previous day.':'';
+        }
+        roomsData=await API.get('/attendance/night-round'+q);
+        populateStartRooms();
+        renderRooms();
+    }
+    catch(e){ document.getElementById('roomsGrid').innerHTML=`<div class="empty-state"><p>${esc(e.message)}</p></div>`; }
+}
+function rememberRoomComplaints(){
+    document.querySelectorAll('[id^="roomComplaint-"]').forEach(t=>{ roomComplaintDrafts[t.id.replace('roomComplaint-','')]=t.value; });
+}
+function roomKey(room){ return `${getBlock(room)}|${getRoomNo(room)}`; }
+function roomLabel(room){ return `Block ${getBlock(room)} - Room ${getRoomNo(room)}`; }
+function roomSortValue(room){
+    const block=getBlock(room);
+    const roomNo=getRoomNo(room);
+    const mainNo=parseInt(roomNo.split('/')[0],10);
+    return `${block}-${String(Number.isFinite(mainNo)?mainNo:99999).padStart(5,'0')}-${roomNo}`;
+}
+function getSortedRooms(){ return [...roomsData].sort((a,b)=>roomSortValue(a).localeCompare(roomSortValue(b))); }
+function getSelectedStartKey(){
+    const roomValue=document.getElementById('startRoomSelect').value;
+    if(roomValue) return roomValue;
+    const sorted=getSortedRooms();
+    const block=document.getElementById('startBlockSelect').value || 'B';
+    const candidate=sorted.find(r=>getBlock(r)===block && getRoomNo(r)==='101') || sorted.find(r=>getBlock(r)===block);
+    return candidate ? roomKey(candidate) : (sorted[0] ? roomKey(sorted[0]) : '');
+}
+function orderedRooms(){
+    const sorted=getSortedRooms();
+    const startKey=getSelectedStartKey();
+    const idx=sorted.findIndex(r=>roomKey(r)===startKey);
+    return idx>0 ? sorted.slice(idx).concat(sorted.slice(0,idx)) : sorted;
+}
+function populateStartRooms(){
+    const blockSelect=document.getElementById('startBlockSelect');
+    const roomSelect=document.getElementById('startRoomSelect');
+    const currentRoom=roomSelect.value;
+    const sorted=getSortedRooms();
+    const blocks=[...new Set(sorted.map(getBlock))].sort();
+    if(blocks.length){
+        const oldBlock=blockSelect.value;
+        fillStartBlockSelect(blocks);
+        blockSelect.value=blocks.includes(oldBlock) ? oldBlock : (blocks.includes('B') ? 'B' : blocks[0]);
+    }
+    const selectedBlock=blockSelect.value || 'B';
+    const roomsInBlock=sorted.filter(r=>getBlock(r)===selectedBlock);
+    roomSelect.innerHTML='<option value="">Auto: Room 101 first</option>'+roomsInBlock.map(r=>`<option value="${esc(roomKey(r))}">Room ${esc(getRoomNo(r))}</option>`).join('');
+    const defaultKey=roomsInBlock.find(r=>getRoomNo(r)==='101') ? `${selectedBlock}|101` : (roomsInBlock[0]?roomKey(roomsInBlock[0]):'');
+    roomSelect.value=roomsInBlock.some(r=>roomKey(r)===currentRoom) ? currentRoom : defaultKey;
+    updateStartPreview();
+}
+function updateStartPreview(){
+    const sorted=getSortedRooms();
+    const key=getSelectedStartKey();
+    const room=sorted.find(r=>roomKey(r)===key);
+    const preview=document.getElementById('startPreview');
+    if(preview) preview.textContent=room ? `Attendance starts from ${roomLabel(room)}. Rooms after this will continue one by one.` : 'No start room available.';
+}
+function renderRooms(){
+    rememberRoomComplaints();
+    const el=document.getElementById('roomsGrid');
+    if(!roomsData.length){el.innerHTML='<div class="empty-state"><p>No rooms found.</p></div>';return;}
+    el.innerHTML=orderedRooms().map(room=>renderRoom(room)).join('');
+}
+function moveRoom(direction){
+    const el=document.getElementById('roomsGrid'); const card=el.querySelector('.room-card');
+    if(!card) return; el.scrollBy({left:direction*(card.offsetWidth+20),behavior:'smooth'});
+}
+function renderRoom(room){
+    const students=room.students||[];
+    const present=students.filter(s=>(statuses[s.studentId]||s.status||'ABSENT')==='PRESENT').length;
+    return `<div class="room-card" data-room-id="${room.roomId}">
+        <div class="room-head"><div><h3>🚪 ${esc(room.block||'A')}-${esc(room.roomNumber)}</h3><div class="room-meta">Block ${esc(room.block||'A')} · Floor ${esc(room.floor)} · Capacity ${esc(room.capacity||0)} · Free ${esc(room.freeBeds||0)}</div></div><div class="present-box"><strong>${present}</strong><span>Present</span></div></div>
+        ${students.length?students.map(s=>renderStudent(s)).join(''):`<div class="student-row"><div>No student allocated. Free beds: ${esc(room.freeBeds||0)}</div></div>`}
+        <div class="room-complaint-box"><label>Room complaint / remark</label><div class="room-complaint-row"><textarea id="roomComplaint-${room.roomId}" placeholder="Write or speak one common room complaint for this room, e.g. light not working, fan issue, water leakage...">${esc(roomComplaintDrafts[room.roomId]||'')}</textarea><button type="button" class="voice-room-btn" id="roomVoiceBtn-${room.roomId}" onclick="toggleRoomVoice(${room.roomId})">🎙 Speak</button></div><div class="voice-status" id="roomVoiceStatus-${room.roomId}">Voice typing: Chrome recommended.</div></div>
+        <div class="room-actions"><button class="btn btn-sm btn-green" onclick="markRoom(${room.roomId},'PRESENT')">All Present</button><button class="btn btn-sm btn-red" onclick="markRoom(${room.roomId},'ABSENT')">All Absent</button><button class="btn btn-sm btn-grey" onclick="markRoom(${room.roomId},'LEAVE')">All Leave</button></div>
+    </div>`;
+}
+function renderStudent(s){
+    const st=statuses[s.studentId]||s.status||'ABSENT';
+    return `<div class="student-row" data-student-id="${s.studentId}"><div><div class="student-name">${esc(s.studentName)}</div><div class="student-reg">${esc(s.registrationNo)}</div></div><div class="status-buttons">
+        <button class="status-btn present ${st==='PRESENT'?'active':''}" onclick="setStatus(${s.studentId},'PRESENT')">✓ Present</button>
+        <button class="status-btn absent ${st==='ABSENT'?'active':''}" onclick="setStatus(${s.studentId},'ABSENT')">✗ Absent</button>
+        <button class="status-btn leave ${st==='LEAVE'?'active':''}" onclick="setStatus(${s.studentId},'LEAVE')">Leave</button>
+    </div></div>`;
+}
+
+function setStatus(studentId,status){
+    statuses[studentId]=status;
+    const row=document.querySelector(`[data-student-id="${studentId}"]`);
+    if(row){
+        row.querySelectorAll('.status-btn').forEach(btn=>btn.classList.remove('active'));
+        const btn=row.querySelector(`.status-btn.${status.toLowerCase()}`);
+        if(btn) btn.classList.add('active');
+        const card=row.closest('.room-card');
+        if(card){
+            const presentCount=[...card.querySelectorAll('[data-student-id]')].filter(r=>{
+                const id=Number(r.getAttribute('data-student-id'));
+                const room=roomsData.find(x=>Number(x.roomId)===Number(card.getAttribute('data-room-id')));
+                const original=(room?.students||[]).find(s=>Number(s.studentId)===id)?.status || 'ABSENT';
+                return (statuses[id]||original)==='PRESENT';
+            }).length;
+            const box=card.querySelector('.present-box strong');
+            if(box) box.textContent=presentCount;
+        }
+    }
+}
+
+function markRoom(roomId,status){ const room=roomsData.find(r=>Number(r.roomId)===Number(roomId)); if(!room)return; (room.students||[]).forEach(s=>statuses[s.studentId]=status); renderRooms(); }
+function markAllVisible(status){ roomsData.forEach(r=>(r.students||[]).forEach(s=>statuses[s.studentId]=status)); renderRooms(); }
+function toggleRoomVoice(roomId){
+    const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    const textarea=document.getElementById(`roomComplaint-${roomId}`);
+    const status=document.getElementById(`roomVoiceStatus-${roomId}`);
+    const btn=document.getElementById(`roomVoiceBtn-${roomId}`);
+    if(!SpeechRecognition){ status.textContent='Voice typing not supported here. Open in Chrome.'; return; }
+    if(roomVoiceRecognition && roomVoiceTarget===roomId){ roomVoiceRecognition.stop(); return; }
+    if(roomVoiceRecognition) roomVoiceRecognition.stop();
+    roomVoiceTarget=roomId; roomVoiceBase=textarea.value.trim();
+    roomVoiceRecognition=new SpeechRecognition();
+    roomVoiceRecognition.lang='en-IN'; roomVoiceRecognition.continuous=true; roomVoiceRecognition.interimResults=true;
+    roomVoiceRecognition.onresult=(event)=>{
+        let spoken='';
+        for(let i=0;i<event.results.length;i++) spoken+=event.results[i][0].transcript+' ';
+        textarea.value=(roomVoiceBase+' '+spoken).replace(/\s+/g,' ').trim();
+        roomComplaintDrafts[roomId]=textarea.value;
+        status.textContent='Listening: '+spoken.trim();
+    };
+    roomVoiceRecognition.onerror=(e)=>{ status.textContent='Voice error: '+e.error; };
+    roomVoiceRecognition.onend=()=>{
+        document.querySelectorAll('.voice-room-btn').forEach(b=>{b.classList.remove('listening');b.textContent='🎙 Speak';});
+        if(roomVoiceTarget){ const st=document.getElementById(`roomVoiceStatus-${roomVoiceTarget}`); if(st) st.textContent='Voice typing stopped.'; }
+        roomVoiceRecognition=null; roomVoiceTarget=null;
+    };
+    btn.classList.add('listening'); btn.textContent='⏹ Stop'; status.textContent='Listening...'; roomVoiceRecognition.start();
+}
+async function saveVisibleAttendance(){
+    const date=document.getElementById('attendanceDate').value;
+    const todayStatus = await API.get('/attendance/status?date='+encodeURIComponent(date)).catch(()=>null);
+    if(date===DateUtil.today() && todayStatus && todayStatus.marked){
+        Toast.warning('Today attendance is already saved. Mark button is disabled to avoid duplicate/confusing updates.');
+        const saveBtn=document.getElementById('saveAttendanceBtn'); if(saveBtn) saveBtn.disabled=true;
+        return;
+    }
+    const records=[]; const roomComplaints={};
+    rememberRoomComplaints();
+    roomsData.forEach(room=>{
+        const text=(roomComplaintDrafts[room.roomId]||document.getElementById(`roomComplaint-${room.roomId}`)?.value||'').trim();
+        if(text) roomComplaints[room.roomId]=text;
+        (room.students||[]).forEach(s=>records.push({studentId:s.studentId,status:statuses[s.studentId]||s.status||'ABSENT',remarks:null}));
+    });
+    if(!records.length && Object.keys(roomComplaints).length===0) return Toast.warning('No attendance data to save');
+    try{ await API.post('/attendance',{date,records,roomComplaints}); Toast.success('Attendance saved'); await loadRooms(); }
+    catch(e){Toast.error(e.message);}
+}
+function exportAttendance(type){ const date=document.getElementById('attendanceDate').value; const block=document.getElementById('blockFilter').value; const q=`?date=${date}${block?`&block=${encodeURIComponent(block)}`:''}`; API.download(`/attendance/export/${type}${q}`,`attendance-${date}.${type==='excel'?'xlsx':'pdf'}`); }
+document.getElementById('attendanceDate').addEventListener('change',loadRooms);
+document.getElementById('blockFilter').addEventListener('change',loadRooms);
+document.getElementById('startBlockSelect').addEventListener('change',()=>{ populateStartRooms(); renderRooms(); });
+document.getElementById('startRoomSelect').addEventListener('change',()=>{ updateStartPreview(); renderRooms(); });
+loadBlocks().then(loadRooms);
+</script>
+    <script src="/js/pwa.js"></script>
+</body></html>

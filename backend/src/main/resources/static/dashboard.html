@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Dashboard – Hostel Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>.disabled-link{opacity:.55;pointer-events:auto;cursor:not-allowed;text-decoration:none}</style>
+
+    <meta name="theme-color" content="#10156f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hostel Mgmt">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+</head>
+<body>
+<div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span class="logo-icon">🏠</span>
+            <div class="logo-text">
+                <h2>Hostel Mgmt</h2>
+                <span>Warden Portal</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main Menu</div>
+            <a href="/dashboard.html" class="nav-link" data-page="dashboard">
+                <span class="nav-icon">📊</span> Dashboard
+            </a>
+            <a href="/attendance.html" class="nav-link" data-page="attendance">
+                <span class="nav-icon">✅</span> Attendance
+            </a>
+            <a href="/students.html" class="nav-link" data-page="students">
+                <span class="nav-icon">👨‍🎓</span> Students
+            </a>
+            <a href="/fees.html" class="nav-link" data-page="fees">
+                <span class="nav-icon">💰</span> Fee Tracking
+            </a>
+            <a href="/complaints.html" class="nav-link" data-page="complaints">
+                <span class="nav-icon">📋</span> Complaints
+            </a>
+            <a href="/mess.html" class="nav-link" data-page="mess">
+                <span class="nav-icon">🍽️</span> Mess Menu
+            </a>
+            <div class="nav-section-title">Settings</div>
+            <a href="/rooms.html" class="nav-link" data-page="rooms">
+                <span class="nav-icon">🚪</span> Manage Rooms
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="sidebarUserInitial">W</div>
+                <div class="user-details">
+                    <div class="user-name" id="sidebarUserName">Warden</div>
+                    <div class="user-role" id="sidebarUserRole">WARDEN</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="topbar">
+            <h1>📊 Dashboard</h1>
+            <div class="topbar-actions">
+                <span id="todayDate" style="font-size:14px;color:#616161;"></span>
+            </div>
+        </div>
+        <div class="page-content">
+            <!-- Stats Grid -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">👨‍🎓</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statStudents">–</div>
+                        <div class="stat-label">Total Students</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statPresent">–</div>
+                        <div class="stat-label">Present Today</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">💰</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statFeeUnpaid">–</div>
+                        <div class="stat-label">Unpaid Fees</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red">📋</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statComplaints">–</div>
+                        <div class="stat-label">Open Complaints</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">🚪</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statRooms">–</div>
+                        <div class="stat-label">Total Rooms</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;" class="dashboard-grid">
+                <!-- Room-wise Complaints -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🚪 Room-wise Complaints</h3>
+                        <a href="/complaints.html" class="btn btn-sm btn-outline">View All</a>
+                    </div>
+                    <div class="card-body" id="roomWiseComplaints">
+                        <div class="loading"><div class="spinner"></div> Loading…</div>
+                    </div>
+                </div>
+
+                <!-- Common Hostel Complaints -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🏠 Common Hostel Complaints</h3>
+                        <a href="/complaints.html" class="btn btn-sm btn-outline">View All</a>
+                    </div>
+                    <div class="card-body" id="commonComplaints">
+                        <div class="loading"><div class="spinner"></div> Loading…</div>
+                    </div>
+                </div>
+
+                <!-- Attendance Overview -->
+                <div class="card" style="grid-column:1 / -1">
+                    <div class="card-header" style="align-items:flex-start;gap:12px;flex-wrap:wrap">
+                        <div>
+                            <h3>✅ Attendance Overview</h3>
+                            <div id="todayAttendanceStatus" style="font-size:13px;color:var(--text-secondary);margin-top:4px">Loading today attendance...</div>
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                            <select id="attendanceHistorySelect" class="form-control" style="width:220px">
+                                <option value="">Previous attendances</option>
+                            </select>
+                            <button class="btn btn-sm btn-info" onclick="showSelectedAttendance()">View</button>
+                            <button class="btn btn-sm btn-secondary" onclick="exportSelectedAttendance()">Export Excel</button>
+                            <a href="/attendance.html" id="markTodayBtn" class="btn btn-sm btn-outline">Mark Today</a>
+                        </div>
+                    </div>
+                    <div class="card-body" id="todayAttendance">
+                        <div class="loading"><div class="spinner"></div> Loading…</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    Auth.requireAuth();
+    initSidebar('dashboard');
+
+    document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    async function loadDashboard() {
+        const [students, rooms, fees, complaints, attendance, todayStatus, attendanceDates] = await Promise.all([
+            safeGet('/students', []),
+            safeGet('/rooms', []),
+            safeGet('/fees', []),
+            safeGet('/complaints?status=OPEN', []),
+            safeGet('/attendance/summary', []),
+            safeGet('/attendance/status', null),
+            safeGet('/attendance/dates?limit=30', [])
+        ]);
+
+        document.getElementById('statStudents').textContent = students.length;
+        document.getElementById('statRooms').textContent = rooms.length;
+        document.getElementById('statFeeUnpaid').textContent = fees.filter(f => f.status === 'UNPAID').length;
+        document.getElementById('statComplaints').textContent = complaints.length;
+        document.getElementById('statPresent').textContent = attendance.reduce((sum, r) => sum + Number(r.presentCount || 0), 0);
+
+        renderRoomWiseComplaints(complaints);
+        renderCommonComplaints(complaints);
+        renderAttendanceControls(todayStatus, attendanceDates);
+        renderAttendanceSummary(attendance, todayStatus);
+    }
+
+    async function safeGet(path, fallback) {
+        try { return await API.get(path); }
+        catch (err) {
+            console.error('Dashboard load failed:', path, err);
+            Toast.error(`${path}: ${err.message}`);
+            return fallback;
+        }
+    }
+
+    function renderAttendanceControls(todayStatus, dates) {
+        const statusEl = document.getElementById('todayAttendanceStatus');
+        const markBtn = document.getElementById('markTodayBtn');
+        const select = document.getElementById('attendanceHistorySelect');
+        const today = DateUtil.today();
+        const marked = todayStatus && todayStatus.marked;
+        if (statusEl) {
+            statusEl.innerHTML = marked
+                ? `Today marked: <b>${todayStatus.presentCount || 0} present</b>, <b>${todayStatus.absentCount || 0} absent</b>, <b>${todayStatus.leaveCount || 0} leave</b> · ${todayStatus.totalMarked || 0}/${todayStatus.totalStudents || 0} students saved`
+                : 'Today attendance is not saved yet.';
+        }
+        if (markBtn) {
+            if (marked) {
+                markBtn.textContent = 'Today Marked';
+                markBtn.classList.add('disabled-link');
+                markBtn.href = '#';
+                markBtn.onclick = (e) => { e.preventDefault(); Toast.warning('Today attendance is already saved. Select previous dates or export from here.'); };
+            } else {
+                markBtn.textContent = 'Mark Today';
+                markBtn.href = '/attendance.html';
+                markBtn.onclick = null;
+            }
+        }
+        if (select) {
+            const rows = Array.isArray(dates) ? dates : [];
+            select.innerHTML = '<option value="">Previous attendances</option>' + rows.map(d => {
+                const label = `${DateUtil.format(d.date)} — ${d.presentCount || 0} present / ${d.totalMarked || 0} saved`;
+                return `<option value="${escHtml(d.date)}" ${d.date === today ? 'selected' : ''}>${escHtml(label)}</option>`;
+            }).join('');
+        }
+    }
+
+    async function showSelectedAttendance() {
+        const date = document.getElementById('attendanceHistorySelect').value;
+        if (!date) return Toast.warning('Select an attendance date first');
+        const [summary, status] = await Promise.all([
+            safeGet(`/attendance/summary?date=${encodeURIComponent(date)}`, []),
+            safeGet(`/attendance/status?date=${encodeURIComponent(date)}`, null)
+        ]);
+        renderAttendanceSummary(summary, status);
+    }
+
+    function exportSelectedAttendance() {
+        const date = document.getElementById('attendanceHistorySelect').value || DateUtil.today();
+        API.download(`/attendance/export/excel?date=${encodeURIComponent(date)}`, `attendance-${date}.xlsx`).catch(e => Toast.error(e.message));
+    }
+
+    function renderAttendanceSummary(attendance, status) {
+        const attEl = document.getElementById('todayAttendance');
+        if (!status || !status.marked) {
+            attEl.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>No attendance saved for today.</p><a href="/attendance.html" class="btn btn-primary" style="margin-top:10px">Mark Today's Attendance</a></div>`;
+            return;
+        }
+        const dateLabel = DateUtil.format(status.date);
+        const roomsWithData = (attendance || []).filter(r => Number(r.totalStudents || 0) > 0);
+        attEl.innerHTML = `
+            <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0 16px;border-bottom:1px solid var(--border);margin-bottom:8px">
+                <div><b>${dateLabel}</b><div style="font-size:13px;color:var(--text-secondary)">${status.totalMarked || 0}/${status.totalStudents || 0} students saved</div></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <span class="badge badge-success">${status.presentCount || 0} Present</span>
+                    <span class="badge badge-danger">${status.absentCount || 0} Absent</span>
+                    <span class="badge badge-secondary">${status.leaveCount || 0} Leave</span>
+                </div>
+            </div>
+            ${roomsWithData.slice(0, 8).map(r => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                    <div>
+                        <span style="font-weight:600;font-size:14px">Room ${escHtml(r.roomNumber)}</span>
+                        <span style="font-size:12px;color:var(--text-secondary);margin-left:8px">Block ${escHtml(r.block || 'A')} · Floor ${r.floor || ''}</span>
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center">
+                        <span class="badge badge-success">${r.presentCount || 0} Present</span>
+                        <span class="badge badge-secondary">${r.totalStudents || 0} Total</span>
+                    </div>
+                </div>`).join('')}
+            ${roomsWithData.length > 8 ? `<div style="padding-top:12px;color:var(--text-secondary);font-size:13px">Showing first 8 rooms only. Use Export Excel for full attendance.</div>` : ''}`;
+    }
+
+    function renderRoomWiseComplaints(complaints) {
+        const el = document.getElementById('roomWiseComplaints');
+        const roomComplaints = complaints.filter(c => c.room || c.student);
+        if (roomComplaints.length === 0) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><p>No room-wise complaints.</p></div>';
+            return;
+        }
+        const grouped = {};
+        roomComplaints.forEach(c => {
+            const room = c.room || (c.student && c.student.room);
+            const key = room ? `${room.block || 'A'}-${room.roomNumber}` : 'Unallocated';
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(c);
+        });
+        el.innerHTML = Object.entries(grouped).slice(0, 6).map(([room, list]) => `
+            <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <div style="font-weight:700;font-size:14px">Room ${escHtml(room)}</div>
+                    <span class="badge badge-warning">${list.length} open</span>
+                </div>
+                ${list.slice(0, 2).map(c => `
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">
+                        <b>${escHtml(c.title)}</b>${c.student ? ' · ' + escHtml(c.student.name) : ''}<br>
+                        ${escHtml(shortText(c.description, 90))}
+                    </div>`).join('')}
+            </div>`).join('');
+    }
+
+    function renderCommonComplaints(complaints) {
+        const el = document.getElementById('commonComplaints');
+        const common = complaints.filter(c => !c.room && !c.student);
+        if (common.length === 0) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><p>No common hostel complaints.</p></div>';
+            return;
+        }
+        el.innerHTML = common.slice(0, 6).map(c => `
+            <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+                <div style="font-weight:700;font-size:14px">${escHtml(c.title)}</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${escHtml(c.category || 'HOSTEL')} · ${DateUtil.formatDateTime(c.raisedAt)}</div>
+                <div style="font-size:13px;margin-top:6px">${escHtml(shortText(c.description, 120))}</div>
+            </div>`).join('');
+    }
+
+    function shortText(str, max) {
+        str = str || '';
+        return str.length > max ? str.slice(0, max - 3) + '...' : str;
+    }
+
+    function escHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    loadDashboard();
+</script>
+    <script src="/js/pwa.js"></script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Manage Rooms – Hostel Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+
+    <meta name="theme-color" content="#10156f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hostel Mgmt">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span class="logo-icon">🏠</span>
+            <div class="logo-text"><h2>Hostel Mgmt</h2><span>Warden Portal</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main Menu</div>
+            <a href="/dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="/attendance.html" class="nav-link" data-page="attendance"><span class="nav-icon">🌙</span> Night Attendance</a>
+            <a href="/students.html" class="nav-link" data-page="students"><span class="nav-icon">👨‍🎓</span> Students</a>
+            <a href="/fees.html" class="nav-link" data-page="fees"><span class="nav-icon">💰</span> Fee Tracking</a>
+            <a href="/complaints.html" class="nav-link" data-page="complaints"><span class="nav-icon">📋</span> Complaints</a>
+            <a href="/mess.html" class="nav-link" data-page="mess"><span class="nav-icon">🍽️</span> Mess Menu</a>
+            <div class="nav-section-title">Settings</div>
+            <a href="/rooms.html" class="nav-link" data-page="rooms"><span class="nav-icon">🚪</span> Manage Rooms</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="sidebarUserInitial">W</div>
+                <div class="user-details">
+                    <div class="user-name" id="sidebarUserName">Warden</div>
+                    <div class="user-role" id="sidebarUserRole">WARDEN</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <h1>🚪 Manage Rooms</h1>
+            <div class="topbar-actions">
+                <button class="btn btn-primary" onclick="openAddRoomModal()">+ Add Room</button>
+            </div>
+        </div>
+        <div class="page-content">
+            <div class="alert alert-warning">
+                ℹ️ Rooms are synchronized with student allocation and night attendance. Default capacity is 3 students, but capacity can vary by block/room.
+            </div>
+            <div class="card" style="margin-top:16px">
+                <div class="card-header">
+                    <h3>Room List</h3>
+                    <span id="roomCount" style="font-size:13px;color:var(--text-secondary)"></span>
+                </div>
+                <div class="card-body">
+                    <div class="room-filter-bar" style="display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;margin-bottom:14px;align-items:end">
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Show Block</label>
+                            <select id="roomBlockFilter" class="form-control" onchange="renderTable()">
+                                <option value="">All Blocks</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Show Floor</label>
+                            <select id="roomFloorFilter" class="form-control" onchange="renderTable()">
+                                <option value="">All Floors</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Room Status</label>
+                            <select id="roomStatusFilter" class="form-control" onchange="renderTable()">
+                                <option value="">All Rooms</option>
+                                <option value="available">Available Beds</option>
+                                <option value="full">Full Rooms</option>
+                                <option value="empty">Empty Rooms</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label>Search Room / Block</label>
+                            <input type="search" id="roomSearchInput" class="form-control" placeholder="Search 101, B, full..." oninput="renderTable()">
+                        </div>
+                    </div>
+                    <div class="alert alert-info" id="roomFilterInfo" style="display:none;margin-bottom:12px"></div>
+                    <div class="table-container" id="roomsTable">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Room Modal -->
+<div class="modal-overlay" id="roomModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="roomModalTitle">Add Room</h3>
+            <button class="modal-close" onclick="Modal.close('roomModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Room Number *</label>
+                    <input type="text" id="fRoomNumber" class="form-control" placeholder="e.g. 101 or A-01">
+                </div>
+                <div class="form-group">
+                    <label>Block</label>
+                    <input type="text" id="fRoomBlock" class="form-control" value="A" maxlength="50" placeholder="A, B, C...">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Floor</label>
+                    <input type="number" id="fRoomFloor" class="form-control" value="1" min="0" max="20">
+                </div>
+                <div class="form-group">
+                    <label>Capacity (max students)</label>
+                    <input type="number" id="fRoomCapacity" class="form-control" value="3" min="1" max="20">
+                </div>
+            </div>
+            <div class="alert alert-danger" id="roomModalError" style="display:none"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="Modal.close('roomModal')">Cancel</button>
+            <button class="btn btn-primary" id="roomSaveBtn" onclick="saveRoom()">Save Room</button>
+        </div>
+    </div>
+</div>
+
+<style>@media(max-width:800px){.room-filter-bar{grid-template-columns:1fr!important}}</style>
+<script src="/js/app.js"></script>
+<script>
+Auth.requireAuth();
+initSidebar('rooms');
+
+let allRooms = [];
+let editingRoomId = null;
+
+function escHtml(s) { if(s === null || s === undefined)return''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function loadRooms() {
+    try {
+        allRooms = await API.get('/rooms');
+        allRooms = sortRooms(allRooms);
+        populateRoomFilters();
+        renderTable();
+    } catch (err) { Toast.error(err.message); }
+}
+
+
+function roomMainNumber(roomNo) {
+    const match = String(roomNo || '').match(/\d+/);
+    return match ? parseInt(match[0], 10) : 999999;
+}
+function sortRooms(list) {
+    return [...list].sort((a,b) => {
+        const blockCompare = String(a.block || '').localeCompare(String(b.block || ''));
+        if (blockCompare !== 0) return blockCompare;
+        const numCompare = roomMainNumber(a.roomNumber) - roomMainNumber(b.roomNumber);
+        if (numCompare !== 0) return numCompare;
+        return String(a.roomNumber || '').localeCompare(String(b.roomNumber || ''));
+    });
+}
+function populateRoomFilters() {
+    const blockSel = document.getElementById('roomBlockFilter');
+    const floorSel = document.getElementById('roomFloorFilter');
+    const oldBlock = blockSel.value;
+    const oldFloor = floorSel.value;
+    const blocks = [...new Set(allRooms.map(r => String(r.block || 'A').trim().toUpperCase()))].sort();
+    const floors = [...new Set(allRooms.map(r => r.floor).filter(v => v !== null && v !== undefined))].sort((a,b)=>a-b);
+    blockSel.innerHTML = '<option value="">All Blocks</option>' + blocks.map(b => `<option value="${escHtml(b)}">Block ${escHtml(b)}</option>`).join('');
+    floorSel.innerHTML = '<option value="">All Floors</option>' + floors.map(f => `<option value="${escHtml(f)}">Floor ${escHtml(f)}</option>`).join('');
+    if (blocks.includes(oldBlock)) blockSel.value = oldBlock;
+    if (floors.map(String).includes(oldFloor)) floorSel.value = oldFloor;
+}
+function getFilteredRooms() {
+    const block = document.getElementById('roomBlockFilter').value;
+    const floor = document.getElementById('roomFloorFilter').value;
+    const status = document.getElementById('roomStatusFilter').value;
+    const q = document.getElementById('roomSearchInput').value.trim().toLowerCase();
+    return sortRooms(allRooms).filter(r => {
+        const b = String(r.block || 'A').trim().toUpperCase();
+        const avail = (r.capacity || 0) - (r.currentOccupancy || 0);
+        const rowText = [`block ${b}`, r.roomNumber, `floor ${r.floor}`, r.capacity, r.currentOccupancy, avail > 0 ? 'available' : 'full'].join(' ').toLowerCase();
+        if (block && b !== block) return false;
+        if (floor && String(r.floor) !== floor) return false;
+        if (status === 'full' && avail > 0) return false;
+        if (status === 'available' && avail <= 0) return false;
+        if (status === 'empty' && (r.currentOccupancy || 0) !== 0) return false;
+        if (q && !rowText.includes(q)) return false;
+        return true;
+    });
+}
+
+function renderTable() {
+    const el = document.getElementById('roomsTable');
+    const filteredRooms = getFilteredRooms();
+    const info = document.getElementById('roomFilterInfo');
+    document.getElementById('roomCount').textContent = `${filteredRooms.length} shown / ${allRooms.length} total rooms`;
+    if (info) {
+        const block = document.getElementById('roomBlockFilter').value || 'All blocks';
+        const status = document.getElementById('roomStatusFilter').value || 'all statuses';
+        info.style.display = 'flex';
+        info.textContent = `Showing: ${block} · ${status}`;
+    }
+    if (allRooms.length === 0) {
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon">🚪</div><p>No rooms found. Add your first room!</p></div>';
+        return;
+    }
+    if (filteredRooms.length === 0) {
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔎</div><p>No rooms match this filter/search.</p></div>';
+        return;
+    }
+    el.innerHTML = `<table>
+        <thead><tr>
+            <th>Block</th><th>Room No.</th><th>Floor</th><th>Capacity</th><th>Occupied</th><th>Availability</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+        ${filteredRooms.map(r => {
+            const pct = Math.round((r.currentOccupancy / r.capacity) * 100);
+            const avail = r.capacity - r.currentOccupancy;
+            return `<tr>
+                <td><strong>Block ${escHtml(r.block || 'A')}</strong></td>
+                <td><strong>Room ${escHtml(r.roomNumber)}</strong></td>
+                <td>Floor ${r.floor}</td>
+                <td>${r.capacity}</td>
+                <td>${r.currentOccupancy}</td>
+                <td style="min-width:140px">
+                    <div style="font-size:13px;margin-bottom:4px">
+                        ${avail > 0 ? `<span style="color:var(--success)">${avail} bed(s) free</span>` :
+                                       '<span style="color:var(--danger)">Full</span>'}
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width:${pct}%; background:${pct >= 100 ? 'var(--danger)' : pct >= 66 ? 'var(--warning)' : 'var(--success)'}"></div>
+                    </div>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="editRoom(${r.id})">✏ Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteRoom(${r.id}, '${escHtml(r.roomNumber)}')">🗑</button>
+                </td>
+            </tr>`;
+        }).join('')}
+        </tbody>
+    </table>`;
+}
+
+function openAddRoomModal() {
+    editingRoomId = null;
+    document.getElementById('roomModalTitle').textContent = 'Add Room';
+    document.getElementById('fRoomNumber').value = '';
+    document.getElementById('fRoomBlock').value = 'A';
+    document.getElementById('fRoomFloor').value = 1;
+    document.getElementById('fRoomCapacity').value = 3;
+    document.getElementById('roomModalError').style.display = 'none';
+    Modal.open('roomModal');
+}
+
+function editRoom(id) {
+    const r = allRooms.find(x => x.id === id);
+    if (!r) return;
+    editingRoomId = id;
+    document.getElementById('roomModalTitle').textContent = 'Edit Room';
+    document.getElementById('fRoomNumber').value = r.roomNumber;
+    document.getElementById('fRoomBlock').value = r.block || 'A';
+    document.getElementById('fRoomFloor').value = r.floor;
+    document.getElementById('fRoomCapacity').value = r.capacity;
+    document.getElementById('roomModalError').style.display = 'none';
+    Modal.open('roomModal');
+}
+
+async function saveRoom() {
+    const errEl = document.getElementById('roomModalError');
+    errEl.style.display = 'none';
+    const body = {
+        roomNumber: document.getElementById('fRoomNumber').value.trim(),
+        block: document.getElementById('fRoomBlock').value.trim() || 'A',
+        floor: parseInt(document.getElementById('fRoomFloor').value),
+        capacity: parseInt(document.getElementById('fRoomCapacity').value)
+    };
+    if (!body.roomNumber) { errEl.textContent = 'Room number is required.'; errEl.style.display='flex'; return; }
+    const btn = document.getElementById('roomSaveBtn');
+    btn.disabled = true;
+    try {
+        if (editingRoomId) { await API.put(`/rooms/${editingRoomId}`, body); Toast.success('Room updated'); }
+        else { await API.post('/rooms', body); Toast.success('Room added'); }
+        Modal.close('roomModal');
+        await loadRooms();
+    } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'flex';
+    } finally { btn.disabled = false; }
+}
+
+async function deleteRoom(id, num) {
+    if (!confirm(`Delete Room ${num}? All student assignments will need to be updated.`)) return;
+    try {
+        await API.delete(`/rooms/${id}`);
+        Toast.success('Room deleted');
+        await loadRooms();
+    } catch (err) { Toast.error(err.message); }
+}
+
+loadRooms();
+</script>
+    <script src="/js/pwa.js"></script>
+</body>
+</html>

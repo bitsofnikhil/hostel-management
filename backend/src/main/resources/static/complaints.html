@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Complaints – Hostel Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+
+    <meta name="theme-color" content="#10156f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hostel Mgmt">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span class="logo-icon">🏠</span>
+            <div class="logo-text"><h2>Hostel Mgmt</h2><span>Warden Portal</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main Menu</div>
+            <a href="/dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="/attendance.html" class="nav-link" data-page="attendance"><span class="nav-icon">🌙</span> Night Attendance</a>
+            <a href="/students.html" class="nav-link" data-page="students"><span class="nav-icon">👨‍🎓</span> Students</a>
+            <a href="/fees.html" class="nav-link" data-page="fees"><span class="nav-icon">💰</span> Fee Tracking</a>
+            <a href="/complaints.html" class="nav-link" data-page="complaints"><span class="nav-icon">📋</span> Complaints</a>
+            <a href="/mess.html" class="nav-link" data-page="mess"><span class="nav-icon">🍽️</span> Mess Menu</a>
+            <div class="nav-section-title">Settings</div>
+            <a href="/rooms.html" class="nav-link" data-page="rooms"><span class="nav-icon">🚪</span> Manage Rooms</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="sidebarUserInitial">W</div>
+                <div class="user-details">
+                    <div class="user-name" id="sidebarUserName">Warden</div>
+                    <div class="user-role" id="sidebarUserRole">WARDEN</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <h1>📋 Complaints</h1>
+            <div class="topbar-actions">
+                <button class="btn btn-primary" onclick="openAddModal()">+ Register Complaint</button>
+            </div>
+        </div>
+        <div class="page-content">
+            <!-- Stats -->
+            <div class="stats-grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:24px">
+                <div class="stat-card">
+                    <div class="stat-icon red">🔴</div>
+                    <div class="stat-info"><div class="stat-value" id="statOpen">–</div><div class="stat-label">Open</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">🔄</div>
+                    <div class="stat-info"><div class="stat-value" id="statInProgress">–</div><div class="stat-label">In Progress</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info"><div class="stat-value" id="statResolved">–</div><div class="stat-label">Resolved</div></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Complaint Register</h3>
+                    <div style="display:flex;gap:8px">
+                        <select id="filterStatus" class="form-control" style="width:150px">
+                            <option value="">All Status</option>
+                            <option value="OPEN">Open</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="RESOLVED">Resolved</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="complaintsList">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Complaint Modal -->
+<div class="modal-overlay" id="complaintModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Register Complaint</h3>
+            <button class="modal-close" onclick="Modal.close('complaintModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Student (Optional)</label>
+                <select id="fCStudent" class="form-control">
+                    <option value="">— General / No Student —</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Complaint Title *</label>
+                <input type="text" id="fCTitle" class="form-control" placeholder="Brief description">
+            </div>
+            <div class="form-group">
+                <label>Detailed Description *</label>
+                <div style="display:flex;gap:8px;align-items:flex-start">
+                    <textarea id="fCDesc" class="form-control" rows="4" placeholder="Describe the complaint in detail..."></textarea>
+                    <button type="button" class="btn btn-outline" id="voiceBtn" onclick="toggleVoiceInput()" title="Speak complaint">🎙 Speak</button>
+                </div>
+                <small id="voiceStatus" style="display:block;margin-top:6px;color:var(--text-secondary)">Voice typing works in supported browsers like Chrome.</small>
+            </div>
+            <div class="alert alert-danger" id="cModalError" style="display:none"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="Modal.close('complaintModal')">Cancel</button>
+            <button class="btn btn-primary" id="cSaveBtn" onclick="saveComplaint()">Register</button>
+        </div>
+    </div>
+</div>
+
+<!-- Resolve Complaint Modal -->
+<div class="modal-overlay" id="resolveModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Update Complaint Status</h3>
+            <button class="modal-close" onclick="Modal.close('resolveModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>New Status *</label>
+                <select id="rStatus" class="form-control">
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="RESOLVED">Resolved</option>
+                </select>
+            </div>
+            <div class="form-group" id="resolutionGroup">
+                <label>Resolution Notes</label>
+                <textarea id="rResolution" class="form-control" rows="3" placeholder="Describe how the complaint was resolved..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="Modal.close('resolveModal')">Cancel</button>
+            <button class="btn btn-success" onclick="confirmStatusUpdate()">Update Status</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+Auth.requireAuth();
+initSidebar('complaints');
+
+let allComplaints = [];
+let allStudents = [];
+let resolvingId = null;
+let recognition = null;
+let listening = false;
+let voiceBaseText = '';
+
+function escHtml(s) { if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toggleVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const status = document.getElementById('voiceStatus');
+    const btn = document.getElementById('voiceBtn');
+    if (!SpeechRecognition) {
+        status.textContent = 'Voice typing is not supported in this browser. Use Chrome.';
+        return;
+    }
+    if (!recognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-IN';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = (event) => {
+            let spokenText = '';
+            for (let i = 0; i < event.results.length; i++) {
+                spokenText += event.results[i][0].transcript + ' ';
+            }
+            const desc = document.getElementById('fCDesc');
+            desc.value = (voiceBaseText + ' ' + spokenText).replace(/\s+/g, ' ').trim();
+            status.textContent = spokenText.trim() ? `Listening: ${spokenText.trim()}` : 'Listening...';
+        };
+        recognition.onend = () => {
+            listening = false;
+            btn.textContent = '🎙 Speak';
+            status.textContent = 'Voice typing stopped.';
+        };
+        recognition.onerror = (e) => {
+            status.textContent = 'Voice error: ' + e.error + '. Check microphone permission and use Chrome if Brave blocks it.';
+        };
+    }
+    if (listening) {
+        recognition.stop();
+        return;
+    }
+    voiceBaseText = document.getElementById('fCDesc').value.trim();
+    recognition.start();
+    listening = true;
+    btn.textContent = '⏹ Stop';
+    status.textContent = 'Listening...';
+}
+
+async function loadData() {
+    try {
+        [allComplaints, allStudents] = await Promise.all([API.get('/complaints'), API.get('/students')]);
+        updateStats();
+        renderComplaints(allComplaints);
+        populateStudentSelect();
+    } catch (err) { Toast.error(err.message); }
+}
+
+function updateStats() {
+    document.getElementById('statOpen').textContent = allComplaints.filter(c => c.status === 'OPEN').length;
+    document.getElementById('statInProgress').textContent = allComplaints.filter(c => c.status === 'IN_PROGRESS').length;
+    document.getElementById('statResolved').textContent = allComplaints.filter(c => c.status === 'RESOLVED').length;
+}
+
+function populateStudentSelect() {
+    const sel = document.getElementById('fCStudent');
+    sel.innerHTML = '<option value="">— General / No Student —</option>' +
+        allStudents.map(s => `<option value="${s.id}">${escHtml(s.name)} (${escHtml(s.registrationNo)})</option>`).join('');
+}
+
+function renderComplaints(complaints) {
+    const el = document.getElementById('complaintsList');
+    if (complaints.length === 0) {
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon">🎉</div><p>No complaints found!</p></div>';
+        return;
+    }
+    const statusColors = { OPEN: 'badge-danger', IN_PROGRESS: 'badge-warning', RESOLVED: 'badge-success' };
+    const statusIcons = { OPEN: '🔴', IN_PROGRESS: '🔄', RESOLVED: '✅' };
+    el.innerHTML = complaints.map(c => `
+    <div style="padding:16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                    <span style="font-size:16px;font-weight:700">${escHtml(c.title)}</span>
+                    <span class="badge ${statusColors[c.status] || 'badge-secondary'}">${statusIcons[c.status] || ''} ${c.status}</span>
+                </div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">${escHtml(c.description)}</div>
+                <div style="font-size:12px;color:var(--text-secondary)">
+                    ${c.student ? `👨‍🎓 ${escHtml(c.student.name)} (${escHtml(c.student.registrationNo)}) · ` : ''}
+                    🕐 ${DateUtil.formatDateTime(c.raisedAt)}
+                    ${c.resolvedAt ? ` · ✅ Resolved: ${DateUtil.formatDateTime(c.resolvedAt)}` : ''}
+                </div>
+                ${c.resolution ? `<div style="margin-top:6px;font-size:13px;padding:8px 12px;background:#f0f9f0;border-radius:6px;color:#2e7d32">📝 ${escHtml(c.resolution)}</div>` : ''}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+                ${c.status !== 'RESOLVED' ? `
+                <button class="btn btn-sm btn-success" onclick="openResolveModal(${c.id}, '${c.status}')">
+                    ${c.status === 'OPEN' ? '🔄 Update' : '✅ Resolve'}
+                </button>` : ''}
+                <button class="btn btn-sm btn-danger" onclick="deleteComplaint(${c.id})">🗑</button>
+            </div>
+        </div>
+    </div>`).join('');
+}
+
+document.getElementById('filterStatus').addEventListener('change', () => {
+    const status = document.getElementById('filterStatus').value;
+    renderComplaints(status ? allComplaints.filter(c => c.status === status) : allComplaints);
+});
+
+function openAddModal() {
+    document.getElementById('fCStudent').value = '';
+    document.getElementById('fCTitle').value = '';
+    document.getElementById('fCDesc').value = '';
+    document.getElementById('cModalError').style.display = 'none';
+    Modal.open('complaintModal');
+}
+
+function openResolveModal(id, currentStatus) {
+    resolvingId = id;
+    document.getElementById('rStatus').value = currentStatus === 'OPEN' ? 'IN_PROGRESS' : 'RESOLVED';
+    document.getElementById('rResolution').value = '';
+    Modal.open('resolveModal');
+}
+
+async function confirmStatusUpdate() {
+    if (!resolvingId) return;
+    const status = document.getElementById('rStatus').value;
+    const resolution = document.getElementById('rResolution').value;
+    try {
+        await API.patch(`/complaints/${resolvingId}/status`, { status, resolution });
+        Toast.success('Complaint status updated');
+        Modal.close('resolveModal');
+        await loadData();
+    } catch (err) { Toast.error(err.message); }
+}
+
+async function saveComplaint() {
+    const errEl = document.getElementById('cModalError');
+    errEl.style.display = 'none';
+    const title = document.getElementById('fCTitle').value.trim();
+    const desc = document.getElementById('fCDesc').value.trim();
+    const studentId = document.getElementById('fCStudent').value;
+    if (!title || !desc) {
+        errEl.textContent = 'Please fill in the title and description.';
+        errEl.style.display = 'flex';
+        return;
+    }
+    const btn = document.getElementById('cSaveBtn');
+    btn.disabled = true;
+    try {
+        await API.post('/complaints', { studentId: studentId || null, title, description: desc });
+        Toast.success('Complaint registered');
+        Modal.close('complaintModal');
+        await loadData();
+    } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'flex';
+    } finally { btn.disabled = false; }
+}
+
+async function deleteComplaint(id) {
+    if (!confirm('Delete this complaint?')) return;
+    try {
+        await API.delete(`/complaints/${id}`);
+        Toast.success('Complaint deleted');
+        await loadData();
+    } catch (err) { Toast.error(err.message); }
+}
+
+loadData();
+</script>
+    <script src="/js/pwa.js"></script>
+</body>
+</html>

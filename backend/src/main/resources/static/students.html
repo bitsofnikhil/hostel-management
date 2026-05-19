@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Students – Hostel Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+
+    <meta name="theme-color" content="#10156f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hostel Mgmt">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span class="logo-icon">🏠</span>
+            <div class="logo-text"><h2>Hostel Mgmt</h2><span>Warden Portal</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main Menu</div>
+            <a href="/dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="/attendance.html" class="nav-link" data-page="attendance"><span class="nav-icon">🌙</span> Night Attendance</a>
+            <a href="/students.html" class="nav-link" data-page="students"><span class="nav-icon">👨‍🎓</span> Students</a>
+            <a href="/fees.html" class="nav-link" data-page="fees"><span class="nav-icon">💰</span> Fee Tracking</a>
+            <a href="/complaints.html" class="nav-link" data-page="complaints"><span class="nav-icon">📋</span> Complaints</a>
+            <a href="/mess.html" class="nav-link" data-page="mess"><span class="nav-icon">🍽️</span> Mess Menu</a>
+            <div class="nav-section-title">Settings</div>
+            <a href="/rooms.html" class="nav-link" data-page="rooms"><span class="nav-icon">🚪</span> Manage Rooms</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="sidebarUserInitial">W</div>
+                <div class="user-details">
+                    <div class="user-name" id="sidebarUserName">Warden</div>
+                    <div class="user-role" id="sidebarUserRole">WARDEN</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <h1>👨‍🎓 Students</h1>
+            <div class="topbar-actions">
+                <button class="btn btn-danger" onclick="deleteAllStudents()">🗑 Remove All Students</button>
+                <button class="btn btn-primary" onclick="openAddModal()">+ Add Student</button>
+            </div>
+        </div>
+        <div class="page-content">
+            
+            <div class="card" style="margin-bottom:16px">
+                <div class="card-header"><h3>Bulk Student Import</h3></div>
+                <div class="card-body">
+                    <p style="font-size:13px;color:var(--text-secondary)">Excel/PDF columns: registrationNo, name, fatherName, phone, email, address, block, roomNumber(optional). Original hostel sheets with Room-no like 101/B/1 are also supported; block is extracted and roomNumber becomes 101/1.</p>
+                    <input type="file" id="studentFile" accept=".xlsx,.xls,.pdf" class="form-control" style="max-width:360px;display:inline-block">
+                    <button class="btn btn-primary" onclick="uploadStudents()">Upload Students</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Student Directory</h3>
+                    <span id="studentCount" style="font-size:13px;color:var(--text-secondary)"></span>
+                </div>
+                <div class="card-body">
+                    <div class="search-bar">
+                        <div class="search-input-wrap" style="max-width:320px">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search by name or Reg. No...">
+                        </div>
+                        <select id="filterRoom" class="form-control" style="width:180px">
+                            <option value="">All Rooms</option>
+                        </select>
+                    </div>
+                    <div class="table-container" id="studentsTable">
+                        <div class="loading"><div class="spinner"></div><span>Loading...</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Student Modal -->
+<div class="modal-overlay" id="studentModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add New Student</h3>
+            <button class="modal-close" onclick="Modal.close('studentModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Registration No. *</label>
+                    <input type="text" id="fRegNo" class="form-control" placeholder="e.g. 2024001">
+                </div>
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="fName" class="form-control" placeholder="Student full name">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Father's Name *</label>
+                    <input type="text" id="fFatherName" class="form-control" placeholder="Father's name">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="fPhone" class="form-control" placeholder="10-digit phone">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email Address *</label>
+                    <input type="email" id="fEmail" class="form-control" placeholder="student@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Student Category *</label>
+                    <select id="fCategory" class="form-control">
+                        <option value="GENERAL">GENERAL</option>
+                        <option value="OBC">OBC</option>
+                        <option value="SC">SC</option>
+                        <option value="ST">ST</option>
+                        <option value="EWS">EWS</option>
+                        <option value="OTHER">OTHER</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Full Address *</label>
+                <textarea id="fAddress" class="form-control" rows="2" placeholder="Complete residential address"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Room Assignment</label><small style="display:block;color:var(--text-secondary)">Leave blank to auto-allocate first free room.</small>
+                <select id="fRoom" class="form-control">
+                    <option value="">— Not Assigned —</option>
+                </select>
+            </div>
+            <div class="alert alert-danger" id="modalError" style="display:none"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="Modal.close('studentModal')">Cancel</button>
+            <button class="btn btn-primary" id="modalSaveBtn" onclick="saveStudent()">Save Student</button>
+        </div>
+    </div>
+</div>
+
+<!-- View Student Modal -->
+<div class="modal-overlay" id="viewModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>👨‍🎓 Student Profile</h3>
+            <button class="modal-close" onclick="Modal.close('viewModal')">×</button>
+        </div>
+        <div class="modal-body" id="viewModalContent"></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="Modal.close('viewModal')">Close</button>
+            <button class="btn btn-primary" id="viewEditBtn">Edit</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+Auth.requireAuth();
+initSidebar('students');
+
+let allStudents = [];
+let allRooms = [];
+let editingId = null;
+
+function escHtml(s) { if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function loadData() {
+    try {
+        [allStudents, allRooms] = await Promise.all([API.get('/students'), API.get('/rooms')]);
+        allStudents = sortStudentsForDisplay(allStudents);
+        populateRoomFilter();
+        renderTable(allStudents);
+        document.getElementById('studentCount').textContent = `${allStudents.length} students`;
+    } catch (err) { Toast.error(err.message); }
+}
+
+function populateRoomFilter() {
+    const sel = document.getElementById('filterRoom');
+    const fRoom = document.getElementById('fRoom');
+    sel.innerHTML = '<option value="">All Rooms</option>';
+    fRoom.innerHTML = '<option value="">— Auto allocate / Not Assigned —</option>';
+    allRooms.forEach(r => {
+        const occupied = Number(r.currentOccupancy || 0);
+        const capacity = Number(r.capacity || 3);
+        const free = Math.max(0, capacity - occupied);
+        const disabled = free <= 0 ? 'disabled' : '';
+        const label = `Block ${escHtml(r.block || 'A')} - Room ${escHtml(r.roomNumber)} (Floor ${r.floor}) — ${occupied}/${capacity}`;
+        sel.insertAdjacentHTML('beforeend', `<option value="${r.id}">${label}</option>`);
+        fRoom.insertAdjacentHTML('beforeend', `<option value="${r.id}" ${disabled}>${label}${free <= 0 ? ' - Full' : ''}</option>`);
+    });
+}
+
+function sortStudentsForDisplay(students) {
+    return [...students].sort((a, b) => {
+        const ao = a.importOrder ?? Number.MAX_SAFE_INTEGER;
+        const bo = b.importOrder ?? Number.MAX_SAFE_INTEGER;
+        if (ao !== bo) return ao - bo;
+        return naturalNumber(a.registrationNo) - naturalNumber(b.registrationNo) || String(a.registrationNo || '').localeCompare(String(b.registrationNo || ''), undefined, {numeric:true});
+    });
+}
+function naturalNumber(value) {
+    const m = String(value || '').match(/\d+/);
+    return m ? Number(m[0]) : Number.MAX_SAFE_INTEGER;
+}
+
+function renderTable(students) {
+    const container = document.getElementById('studentsTable');
+    if (students.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">👨‍🎓</div><p>No students found</p></div>';
+        return;
+    }
+    container.innerHTML = `
+    <table>
+        <thead>
+            <tr>
+                <th>Reg. No.</th>
+                <th>Name</th>
+                <th>Father's Name</th>
+                <th>Phone</th>
+                <th>Category</th>
+                <th>Room</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${students.map(s => `
+            <tr>
+                <td><strong>${escHtml(s.registrationNo)}</strong></td>
+                <td>${escHtml(s.name)}</td>
+                <td>${escHtml(s.fatherName)}</td>
+                <td>${escHtml(s.phone)}</td>
+                <td><span class="badge badge-info">${escHtml(s.category || 'GENERAL')}</span></td>
+                <td>${s.roomNumber ? `<span class="badge badge-info">Room ${escHtml(s.roomNumber)}</span>` : '<span class="badge badge-secondary">Unassigned</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="viewStudent(${s.id})">👁 View</button>
+                    <button class="btn btn-sm btn-primary" onclick="editStudent(${s.id})">✏ Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteStudent(${s.id}, '${escHtml(s.name)}')">🗑</button>
+                </td>
+            </tr>`).join('')}
+        </tbody>
+    </table>`;
+}
+
+// Search & filter
+const searchInput = document.getElementById('searchInput');
+const filterRoom = document.getElementById('filterRoom');
+
+function applyFilters() {
+    const q = searchInput.value.toLowerCase();
+    const roomId = filterRoom.value;
+    let filtered = sortStudentsForDisplay(allStudents);
+    if (q) {
+        filtered = filtered.filter(s =>
+            s.name.toLowerCase().includes(q) ||
+            s.registrationNo.toLowerCase().includes(q) ||
+            s.phone.includes(q)
+        );
+    }
+    if (roomId) {
+        filtered = filtered.filter(s => String(s.roomId) === roomId);
+    }
+    renderTable(filtered);
+}
+
+searchInput.addEventListener('input', debounce(applyFilters, 300));
+filterRoom.addEventListener('change', applyFilters);
+
+function openAddModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Add New Student';
+    document.getElementById('fRegNo').value = '';
+    document.getElementById('fName').value = '';
+    document.getElementById('fFatherName').value = '';
+    document.getElementById('fPhone').value = '';
+    document.getElementById('fEmail').value = '';
+    document.getElementById('fCategory').value = 'GENERAL';
+    document.getElementById('fAddress').value = '';
+    document.getElementById('fRoom').value = '';
+    document.getElementById('modalError').style.display = 'none';
+    Modal.open('studentModal');
+}
+
+function editStudent(id) {
+    const s = allStudents.find(x => x.id === id);
+    if (!s) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Edit Student';
+    document.getElementById('fRegNo').value = s.registrationNo;
+    document.getElementById('fName').value = s.name;
+    document.getElementById('fFatherName').value = s.fatherName;
+    document.getElementById('fPhone').value = s.phone;
+    document.getElementById('fEmail').value = s.email;
+    document.getElementById('fCategory').value = s.category || 'GENERAL';
+    document.getElementById('fAddress').value = s.address;
+    document.getElementById('fRoom').value = s.roomId || '';
+    document.getElementById('modalError').style.display = 'none';
+    Modal.open('studentModal');
+}
+
+function viewStudent(id) {
+    const s = allStudents.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('viewModalContent').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Registration No.</div><div style="font-size:16px;font-weight:700;color:var(--primary)">${escHtml(s.registrationNo)}</div></div>
+            <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Room</div><div>${s.roomNumber ? `Room ${escHtml(s.roomNumber)}` : 'Not Assigned'}</div></div>
+            <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Full Name</div><div>${escHtml(s.name)}</div></div>
+            <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Father's Name</div><div>${escHtml(s.fatherName)}</div></div>
+            <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Phone</div><div>${escHtml(s.phone)}</div></div>
+            <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Category</div><div>${escHtml(s.category || 'GENERAL')}</div></div>
+            <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Email</div><div>${escHtml(s.email)}</div></div>
+        </div>
+        <div style="margin-top:12px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">Address</div><div>${escHtml(s.address)}</div></div>
+    `;
+    document.getElementById('viewEditBtn').onclick = () => { Modal.close('viewModal'); editStudent(id); };
+    Modal.open('viewModal');
+}
+
+async function saveStudent() {
+    const errEl = document.getElementById('modalError');
+    errEl.style.display = 'none';
+    const body = {
+        registrationNo: document.getElementById('fRegNo').value.trim(),
+        name: document.getElementById('fName').value.trim(),
+        fatherName: document.getElementById('fFatherName').value.trim(),
+        phone: document.getElementById('fPhone').value.trim(),
+        email: document.getElementById('fEmail').value.trim(),
+        category: document.getElementById('fCategory').value,
+        address: document.getElementById('fAddress').value.trim(),
+        roomId: document.getElementById('fRoom').value || null
+    };
+    if (!body.registrationNo || !body.name || !body.fatherName || !body.phone || !body.email || !body.address) {
+        errEl.textContent = 'Please fill in all required fields.';
+        errEl.style.display = 'flex';
+        return;
+    }
+    const btn = document.getElementById('modalSaveBtn');
+    btn.disabled = true;
+    try {
+        if (editingId) {
+            await API.put(`/students/${editingId}`, body);
+            Toast.success('Student updated successfully');
+        } else {
+            await API.post('/students', body);
+            Toast.success('Student added successfully');
+        }
+        Modal.close('studentModal');
+        await loadData();
+    } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'flex';
+    } finally { btn.disabled = false; }
+}
+
+async function deleteStudent(id, name) {
+    try {
+        await API.delete(`/students/${id}`);
+        Toast.success('Student removed');
+        await loadData();
+    } catch (err) { Toast.error(err.message); }
+}
+
+async function deleteAllStudents() {
+    const btn = event?.currentTarget;
+    if (btn) btn.disabled = true;
+    try {
+        const r = await API.delete('/students');
+        Toast.success(`Removed ${r.removed || 0} students`);
+        await loadData();
+    } catch (err) { Toast.error(err.message); }
+    finally { if (btn) btn.disabled = false; }
+}
+
+async function uploadStudents() {
+    const f = document.getElementById('studentFile').files[0];
+    if (!f) return Toast.warning('Select Excel/PDF file');
+    try {
+        const r = await API.upload('/import/students', f);
+        Toast.success(`Imported ${r.saved} students`);
+        if (r.errors && r.errors.length) alert(r.errors.join('\n'));
+        await loadData();
+    } catch (err) { Toast.error(err.message); }
+}
+
+loadData();
+</script>
+    <script src="/js/pwa.js"></script>
+</body>
+</html>

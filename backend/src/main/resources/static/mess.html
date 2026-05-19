@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Mess Menu – Hostel Management</title><link rel="stylesheet" href="/css/style.css">
+
+    <meta name="theme-color" content="#10156f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hostel Mgmt">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+</head>
+<body>
+<div class="app-layout">
+<aside class="sidebar">
+    <div class="sidebar-header"><span class="logo-icon">🏠</span><div class="logo-text"><h2>Hostel Mgmt</h2><span>Warden Portal</span></div></div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-title">Main Menu</div>
+        <a href="/dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/attendance.html" class="nav-link" data-page="attendance"><span class="nav-icon">🌙</span> Attendance</a>
+        <a href="/students.html" class="nav-link" data-page="students"><span class="nav-icon">👨‍🎓</span> Students</a>
+        <a href="/fees.html" class="nav-link" data-page="fees"><span class="nav-icon">💰</span> Fee Tracking</a>
+        <a href="/complaints.html" class="nav-link" data-page="complaints"><span class="nav-icon">📋</span> Complaints</a>
+        <a href="/mess.html" class="nav-link" data-page="mess"><span class="nav-icon">🍽️</span> Mess Menu</a>
+        <div class="nav-section-title">Settings</div><a href="/rooms.html" class="nav-link" data-page="rooms"><span class="nav-icon">🚪</span> Manage Rooms</a>
+    </nav>
+    <div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="sidebarUserInitial">W</div><div class="user-details"><div class="user-name" id="sidebarUserName">Warden</div><div class="user-role" id="sidebarUserRole">WARDEN</div></div></div><button class="btn-logout" onclick="logout()">🚪 Logout</button></div>
+</aside>
+<div class="main-content">
+    <div class="topbar"><h1>🍽️ Mess Menu</h1><div class="topbar-actions"><button class="btn btn-primary" onclick="saveSuggestionWeek()">Use Seasonal Suggestions</button><button class="btn btn-outline" onclick="exportMenuPdf()">Download PDF</button></div></div>
+    <div class="page-content">
+        <div class="card" style="margin-bottom:16px"><div class="card-header"><h3>Manual Menu Entry</h3></div><div class="card-body">
+            <div class="form-row">
+                <div class="form-group"><label>Date</label><input type="date" id="menuDate" class="form-control"></div>
+                <div class="form-group"><label>Timing / Meal</label><select id="mealType" class="form-control" onchange="setDefaultTime()"><option>BREAKFAST</option><option>LUNCH</option><option>SNACKS</option><option>DINNER</option></select></div>
+                <div class="form-group"><label>Meal Time</label><input id="mealTime" class="form-control" placeholder="07:30 AM - 09:00 AM"></div>
+                <div class="form-group"><label>Season</label><select id="season" class="form-control"><option>SUMMER</option><option>WINTER</option><option>MONSOON</option><option>SPRING</option><option>AUTUMN</option></select></div>
+            </div>
+            <div class="form-group"><label>Menu Items</label><textarea id="items" class="form-control" rows="2" placeholder="Roti, rice, dal, curd..."></textarea></div>
+            <div class="form-group"><label>Vegetables / Sabzi</label><textarea id="vegetables" class="form-control" rows="2" placeholder="Aloo gobhi, lauki, bhindi, paneer, mix veg..."></textarea></div>
+            <div class="form-group"><label>Notes</label><input id="notes" class="form-control" placeholder="Optional notes"></div>
+            <button class="btn btn-primary" onclick="saveMenu()">Save Menu</button> <button class="btn btn-outline" onclick="loadSuggestion()">Suggest by Season</button>
+        </div></div>
+        <div class="card"><div class="card-header"><h3>Next 7 Days Menu</h3><span id="seasonHint" style="font-size:13px;color:var(--text-secondary)"></span></div><div class="card-body"><div id="menuTable" class="table-container"><div class="loading"><div class="spinner"></div></div></div></div></div>
+    </div>
+</div>
+</div>
+<script src="/js/app.js"></script>
+<script>
+Auth.requireAuth(); initSidebar('mess'); document.getElementById('menuDate').value=DateUtil.today(); setDefaultTime();
+function escHtml(s){return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function mealTimeFor(meal){return {BREAKFAST:'07:30 AM - 09:00 AM',LUNCH:'12:30 PM - 02:00 PM',SNACKS:'05:00 PM - 06:00 PM',DINNER:'08:00 PM - 10:00 PM'}[meal]||'';}
+function setDefaultTime(){document.getElementById('mealTime').value=mealTimeFor(document.getElementById('mealType').value);}
+async function loadMenu(){ const from=DateUtil.today(); const to=new Date(); to.setDate(to.getDate()+6); const toStr=to.toISOString().split('T')[0]; const rows=await API.get(`/mess/menu?from=${from}&to=${toStr}`); render(rows); }
+function render(rows){ const el=document.getElementById('menuTable'); if(!rows.length){el.innerHTML='<div class="empty-state"><p>No menu saved yet.</p></div>';return;} el.innerHTML=`<table><thead><tr><th>Date</th><th>Timing</th><th>Season</th><th>Menu Items</th><th>Vegetables</th><th>Notes</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${DateUtil.format(r.menuDate)}</td><td><strong>${r.mealType}</strong><br><small>${escHtml(r.mealTime||'')}</small></td><td>${r.season}</td><td>${escHtml(r.items)}</td><td>${escHtml(r.vegetables||'')}</td><td>${escHtml(r.notes||'')}</td><td><button class="btn btn-sm btn-danger" onclick="delMenu(${r.id})">Delete</button></td></tr>`).join('')}</tbody></table>`; }
+async function loadSuggestion(){ const date=document.getElementById('menuDate').value; const meal=document.getElementById('mealType').value; const s=await API.get(`/mess/suggestion?date=${date}`); document.getElementById('season').value=s.season; document.getElementById('items').value=s[meal]||''; document.getElementById('vegetables').value=s.VEGETABLES||''; document.getElementById('seasonHint').textContent=`Suggested season: ${s.season}`; }
+async function saveMenu(){ const body={menuDate:document.getElementById('menuDate').value,mealType:document.getElementById('mealType').value,mealTime:document.getElementById('mealTime').value.trim(),season:document.getElementById('season').value,items:document.getElementById('items').value.trim(),vegetables:document.getElementById('vegetables').value.trim(),notes:document.getElementById('notes').value.trim()}; if(!body.items)return Toast.warning('Enter menu items'); try{await API.post('/mess/menu',body); Toast.success('Menu saved'); loadMenu();}catch(e){Toast.error(e.message);} }
+async function saveSuggestionWeek(){ try{ for(let d=0;d<7;d++){ const date=new Date(); date.setDate(date.getDate()+d); const ds=date.toISOString().split('T')[0]; const s=await API.get(`/mess/suggestion?date=${ds}`); for(const meal of ['BREAKFAST','LUNCH','SNACKS','DINNER']) await API.post('/mess/menu',{menuDate:ds,mealType:meal,mealTime:mealTimeFor(meal),season:s.season,items:s[meal],vegetables:s.VEGETABLES||'',notes:'Seasonal auto suggestion'}); } Toast.success('Seasonal menu created for 7 days'); loadMenu(); }catch(e){Toast.error(e.message);} }
+async function delMenu(id){ if(!confirm('Delete menu item?'))return; await API.delete(`/mess/menu/${id}`); loadMenu(); }
+function exportMenuPdf(){ const from=DateUtil.today(); const to=new Date(); to.setDate(to.getDate()+6); API.download(`/mess/export/pdf?from=${from}&to=${to.toISOString().split('T')[0]}`,`mess-menu-${from}.pdf`); }
+loadMenu();
+</script>
+    <script src="/js/pwa.js"></script>
+</body></html>

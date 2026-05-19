@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Fee Tracking – Hostel Management</title>
+    <link rel="stylesheet" href="/css/style.css">
+
+    <meta name="theme-color" content="#10156f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hostel Mgmt">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+    <style>
+        .fee-summary-table th, .fee-summary-table td { vertical-align: middle; }
+        .student-fee-summary-row { cursor: pointer; }
+        .student-fee-summary-row:hover { background: #f8fafc; }
+        .student-name-link { border: 0; background: transparent; padding: 0; color: #0b126f; font-weight: 800; font-size: 16px; cursor: pointer; text-align: left; }
+        .fee-detail-row td { background: #f8fafc; padding: 0 18px 18px; }
+        .fee-detail-panel { border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; padding: 16px; margin-top: 8px; }
+        .fee-detail-title { font-weight: 800; color: #0b126f; margin-bottom: 12px; }
+        .fee-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+        .fee-detail-card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; background: #fff; }
+        .fee-detail-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .fee-detail-meta { display: grid; gap: 6px; font-size: 14px; color: #374151; }
+        .fee-detail-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .amount-paid { color: #15803d; }
+        .amount-pending { color: #b91c1c; }
+        @media (max-width: 900px) { .fee-summary-table { min-width: 980px; } }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span class="logo-icon">🏠</span>
+            <div class="logo-text"><h2>Hostel Mgmt</h2><span>Warden Portal</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main Menu</div>
+            <a href="/dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="/attendance.html" class="nav-link" data-page="attendance"><span class="nav-icon">🌙</span> Night Attendance</a>
+            <a href="/students.html" class="nav-link" data-page="students"><span class="nav-icon">👨‍🎓</span> Students</a>
+            <a href="/fees.html" class="nav-link" data-page="fees"><span class="nav-icon">💰</span> Fee Tracking</a>
+            <a href="/complaints.html" class="nav-link" data-page="complaints"><span class="nav-icon">📋</span> Complaints</a>
+            <a href="/mess.html" class="nav-link" data-page="mess"><span class="nav-icon">🍽️</span> Mess Menu</a>
+            <div class="nav-section-title">Settings</div>
+            <a href="/rooms.html" class="nav-link" data-page="rooms"><span class="nav-icon">🚪</span> Manage Rooms</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="sidebarUserInitial">W</div>
+                <div class="user-details">
+                    <div class="user-name" id="sidebarUserName">Warden</div>
+                    <div class="user-role" id="sidebarUserRole">WARDEN</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="topbar">
+            <h1>💰 Fee Tracking</h1>
+            <div class="topbar-actions">
+                <button class="btn btn-outline" onclick="exportFeeAudit()">⬇ Export Audit Excel</button>
+                <button class="btn btn-primary" onclick="openAddFeeModal()">+ Add Fee Record</button>
+            </div>
+        </div>
+        <div class="page-content">
+            <!-- Stats -->
+            <div class="stats-grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:24px">
+                <div class="stat-card">
+                    <div class="stat-icon red">⚠️</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statUnpaid">–</div>
+                        <div class="stat-label">Unpaid</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statPaid">–</div>
+                        <div class="stat-label">Paid</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon warning">⏳</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="statPartial">–</div>
+                        <div class="stat-label">Partial</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Fee Records</h3>
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <select id="filterStatus" class="form-control" style="width:140px">
+                            <option value="">All Status</option>
+                            <option value="UNPAID">Unpaid</option>
+                            <option value="PAID">Paid</option>
+                            <option value="PARTIAL">Partial</option>
+                        </select>
+                        <div class="search-input-wrap" style="width:200px">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="searchFee" class="form-control" placeholder="Search student...">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-container" id="feesTable">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Fee Modal -->
+<div class="modal-overlay" id="feeModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="feModalTitle">Add Fee Record</h3>
+            <button class="modal-close" onclick="Modal.close('feeModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Student *</label>
+                <select id="fFeeStudent" class="form-control"></select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Fee Type *</label>
+                    <select id="fFeeType" class="form-control">
+                        <option value="">-- Select --</option>
+                        <option>Hostel Rent</option>
+                        <option>Mess Fee</option>
+                        <option>Security Fee</option>
+                        <option>Maintenance Fee</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Billing Period *</label>
+                    <select id="fBillingPeriod" class="form-control">
+                        <option value="ANNUAL">Annual</option>
+                        <option value="ONE_TIME">One Time</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Amount (₹) *</label>
+                    <input type="number" id="fFeeAmount" class="form-control" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Security Refund Status</label>
+                    <select id="fSecurityRefunded" class="form-control">
+                        <option value="false">Not Refunded / Not Applicable</option>
+                        <option value="true">Refunded</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Due Date *</label>
+                    <input type="date" id="fFeeDueDate" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Paid Date</label>
+                    <input type="date" id="fFeePaidDate" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Refund Date</label>
+                <input type="date" id="fRefundDate" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Status *</label>
+                <select id="fFeeStatus" class="form-control">
+                    <option value="UNPAID">Unpaid</option>
+                    <option value="PAID">Paid</option>
+                    <option value="PARTIAL">Partial</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Remarks</label>
+                <input type="text" id="fFeeRemarks" class="form-control" placeholder="Optional remarks">
+            </div>
+            <div class="alert alert-danger" id="feeModalError" style="display:none"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="Modal.close('feeModal')">Cancel</button>
+            <button class="btn btn-primary" id="feeSaveBtn" onclick="saveFee()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+Auth.requireAuth();
+initSidebar('fees');
+
+let allFees = [];
+let allStudents = [];
+let editingFeeId = null;
+const expandedFeeRows = new Set();
+
+function escHtml(s) { if(!s)return''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtAmount(a) { return '₹' + parseFloat(a).toLocaleString('en-IN', { minimumFractionDigits: 2 }); }
+
+async function loadData() {
+    try {
+        [allFees, allStudents] = await Promise.all([API.get('/fees'), API.get('/students')]);
+        updateStats();
+        renderTable(allFees);
+        populateStudentSelect();
+    } catch (err) { Toast.error(err.message); }
+}
+
+function updateStats() {
+    document.getElementById('statUnpaid').textContent = allFees.filter(f => f.status === 'UNPAID').length;
+    document.getElementById('statPaid').textContent = allFees.filter(f => f.status === 'PAID').length;
+    document.getElementById('statPartial').textContent = allFees.filter(f => f.status === 'PARTIAL').length;
+}
+
+function populateStudentSelect() {
+    const sel = document.getElementById('fFeeStudent');
+    sel.innerHTML = '<option value="">-- Select Student --</option>' +
+        allStudents.map(s => `<option value="${s.id}">${escHtml(s.name)} (${escHtml(s.registrationNo)})</option>`).join('');
+}
+
+function renderTable(fees) {
+    const el = document.getElementById('feesTable');
+    if (fees.length === 0) {
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon">💰</div><p>No fee records found</p></div>';
+        return;
+    }
+
+    const groups = new Map();
+    fees.forEach(f => {
+        const s = f.student || {};
+        const key = String(s.id || `unknown-${s.registrationNo || s.name || f.id}`);
+        if (!groups.has(key)) groups.set(key, { key, student: s, fees: [] });
+        groups.get(key).fees.push(f);
+    });
+
+    const orderedGroups = Array.from(groups.values()).sort((a, b) =>
+        (a.student.name || '').localeCompare(b.student.name || '')
+    );
+
+    el.innerHTML = `<table class="fee-summary-table">
+        <thead><tr>
+            <th style="min-width:220px">Student</th>
+            <th style="min-width:130px">Reg. / Category</th>
+            <th>Total Fees</th>
+            <th>Paid</th>
+            <th>Pending</th>
+            <th>Overall Status</th>
+            <th>Security Refund</th>
+            <th>Details</th>
+        </tr></thead>
+        <tbody>
+        ${orderedGroups.map(group => {
+            const s = group.student || {};
+            const key = group.key;
+            const items = group.fees.sort((a, b) => (a.feeType || '').localeCompare(b.feeType || ''));
+            const total = items.reduce((sum, f) => sum + (parseFloat(f.amount) || 0), 0);
+            const paidAmount = items.filter(f => f.status === 'PAID').reduce((sum, f) => sum + (parseFloat(f.amount) || 0), 0);
+            const pendingAmount = total - paidAmount;
+            const paid = items.filter(f => f.status === 'PAID').length;
+            const unpaid = items.filter(f => f.status === 'UNPAID').length;
+            const partial = items.filter(f => f.status === 'PARTIAL').length;
+            let overall = 'PAID';
+            let overallClass = 'badge-success';
+            if (unpaid > 0) { overall = 'PENDING'; overallClass = 'badge-danger'; }
+            else if (partial > 0 || paid < items.length) { overall = 'PARTIAL'; overallClass = 'badge-warning'; }
+
+            const security = items.find(f => (f.feeType || '').toLowerCase().includes('security'));
+            const securityText = security
+                ? (security.securityRefunded
+                    ? `<span class="badge badge-success">Refunded${security.refundDate ? ' · ' + DateUtil.format(security.refundDate) : ''}</span>`
+                    : '<span class="badge badge-danger">Not Refunded</span>')
+                : '<span class="badge badge-secondary">Not Added</span>';
+
+            const isOpen = expandedFeeRows.has(key);
+            const detailsRow = isOpen ? `<tr class="fee-detail-row">
+                <td colspan="8">
+                    <div class="fee-detail-panel">
+                        <div class="fee-detail-title">Fee records for ${escHtml(s.name || 'Unknown Student')}</div>
+                        <div class="fee-detail-grid">
+                            ${items.map(f => {
+                                const statusBadge = { PAID: 'badge-success', UNPAID: 'badge-danger', PARTIAL: 'badge-warning' }[f.status] || 'badge-secondary';
+                                return `<div class="fee-detail-card">
+                                    <div class="fee-detail-card-head">
+                                        <strong>${escHtml(f.feeType)}</strong>
+                                        <span class="badge ${statusBadge}">${f.status}</span>
+                                    </div>
+                                    <div class="fee-detail-meta">
+                                        <span><b>Period:</b> ${escHtml(f.billingPeriod || 'ANNUAL')}</span>
+                                        <span><b>Amount:</b> ${fmtAmount(f.amount)}</span>
+                                        <span><b>Due:</b> ${DateUtil.format(f.dueDate)}</span>
+                                        <span><b>Paid:</b> ${f.paidDate ? DateUtil.format(f.paidDate) : '–'}</span>
+                                        ${(f.feeType || '').toLowerCase().includes('security') ? `<span><b>Refund:</b> ${f.securityRefunded ? 'Refunded' : 'Not refunded'}${f.refundDate ? ' · ' + DateUtil.format(f.refundDate) : ''}</span>` : ''}
+                                        ${f.remarks ? `<span><b>Remarks:</b> ${escHtml(f.remarks)}</span>` : ''}
+                                    </div>
+                                    <div class="fee-detail-actions">
+                                        <button class="btn btn-sm btn-primary" onclick="editFee(${f.id})">Edit</button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteFee(${f.id})">Delete</button>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </td>
+            </tr>` : '';
+
+            return `<tr class="student-fee-summary-row" onclick="toggleFeeDetails('${key}')">
+                <td>
+                    <button class="student-name-link" type="button" onclick="event.stopPropagation(); toggleFeeDetails('${key}')">
+                        ${isOpen ? '▾' : '▸'} ${escHtml(s.name || 'Unknown Student')}
+                    </button><br>
+                    <small>${escHtml(s.room?.roomNumber ? 'Room ' + s.room.roomNumber : 'No room assigned')}</small>
+                </td>
+                <td>
+                    <strong>${escHtml(s.registrationNo || '–')}</strong><br>
+                    <span class="badge badge-secondary">${escHtml(s.category || 'GENERAL')}</span>
+                </td>
+                <td><strong>${fmtAmount(total)}</strong><br><small>${items.length} record${items.length === 1 ? '' : 's'}</small></td>
+                <td><strong class="amount-paid">${fmtAmount(paidAmount)}</strong><br><small>${paid} paid</small></td>
+                <td><strong class="amount-pending">${fmtAmount(pendingAmount)}</strong><br><small>${partial} partial / ${unpaid} unpaid</small></td>
+                <td><span class="badge ${overallClass}">${overall}</span></td>
+                <td>${securityText}</td>
+                <td><button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); toggleFeeDetails('${key}')">${isOpen ? 'Hide' : 'View'}</button></td>
+            </tr>${detailsRow}`;
+        }).join('')}
+        </tbody>
+    </table>`;
+}
+
+function toggleFeeDetails(key) {
+    if (expandedFeeRows.has(key)) expandedFeeRows.delete(key);
+    else expandedFeeRows.add(key);
+    applyFilters();
+}
+
+document.getElementById('filterStatus').addEventListener('change', applyFilters);
+document.getElementById('searchFee').addEventListener('input', debounce(applyFilters, 300));
+
+function applyFilters() {
+    const status = document.getElementById('filterStatus').value;
+    const q = document.getElementById('searchFee').value.toLowerCase();
+    let filtered = allFees;
+    if (status) filtered = filtered.filter(f => f.status === status);
+    if (q) filtered = filtered.filter(f => {
+        const s = f.student || {};
+        return (s.name || '').toLowerCase().includes(q) || (s.registrationNo || '').toLowerCase().includes(q);
+    });
+    renderTable(filtered);
+}
+
+function openAddFeeModal() {
+    editingFeeId = null;
+    document.getElementById('feModalTitle').textContent = 'Add Fee Record';
+    document.getElementById('fFeeStudent').value = '';
+    document.getElementById('fFeeType').value = '';
+    document.getElementById('fFeeAmount').value = '';
+    document.getElementById('fBillingPeriod').value = 'ANNUAL';
+    document.getElementById('fFeeDueDate').value = '';
+    document.getElementById('fFeePaidDate').value = '';
+    document.getElementById('fSecurityRefunded').value = 'false';
+    document.getElementById('fRefundDate').value = '';
+    document.getElementById('fFeeStatus').value = 'UNPAID';
+    document.getElementById('fFeeRemarks').value = '';
+    document.getElementById('feeModalError').style.display = 'none';
+    Modal.open('feeModal');
+}
+
+function editFee(id) {
+    const f = allFees.find(x => x.id === id);
+    if (!f) return;
+    editingFeeId = id;
+    document.getElementById('feModalTitle').textContent = 'Edit Fee Record';
+    document.getElementById('fFeeStudent').value = f.student?.id || '';
+    document.getElementById('fFeeType').value = f.feeType;
+    document.getElementById('fFeeAmount').value = f.amount;
+    document.getElementById('fBillingPeriod').value = f.billingPeriod || 'ANNUAL';
+    document.getElementById('fFeeDueDate').value = f.dueDate;
+    document.getElementById('fFeePaidDate').value = f.paidDate || '';
+    document.getElementById('fSecurityRefunded').value = String(!!f.securityRefunded);
+    document.getElementById('fRefundDate').value = f.refundDate || '';
+    document.getElementById('fFeeStatus').value = f.status;
+    document.getElementById('fFeeRemarks').value = f.remarks || '';
+    document.getElementById('feeModalError').style.display = 'none';
+    Modal.open('feeModal');
+}
+
+async function saveFee() {
+    const errEl = document.getElementById('feeModalError');
+    errEl.style.display = 'none';
+    const studentId = document.getElementById('fFeeStudent').value;
+    const feeType = document.getElementById('fFeeType').value;
+    const amount = document.getElementById('fFeeAmount').value;
+    const dueDate = document.getElementById('fFeeDueDate').value;
+    if (!studentId || !feeType || !amount || !dueDate) {
+        errEl.textContent = 'Please fill in all required fields.';
+        errEl.style.display = 'flex';
+        return;
+    }
+    const body = {
+        studentId: parseInt(studentId),
+        feeType,
+        billingPeriod: document.getElementById('fBillingPeriod').value,
+        amount: parseFloat(amount),
+        dueDate,
+        paidDate: document.getElementById('fFeePaidDate').value || null,
+        status: document.getElementById('fFeeStatus').value,
+        securityRefunded: document.getElementById('fSecurityRefunded').value === 'true',
+        refundDate: document.getElementById('fRefundDate').value || null,
+        remarks: document.getElementById('fFeeRemarks').value
+    };
+    const btn = document.getElementById('feeSaveBtn');
+    btn.disabled = true;
+    try {
+        if (editingFeeId) { await API.put(`/fees/${editingFeeId}`, body); Toast.success('Fee record updated'); }
+        else { await API.post('/fees', body); Toast.success('Fee record added'); }
+        Modal.close('feeModal');
+        await loadData();
+    } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'flex';
+    } finally { btn.disabled = false; }
+}
+
+async function exportFeeAudit() {
+    try {
+        await API.download('/fees/export/excel', 'fee-audit.xlsx');
+    } catch (err) { Toast.error(err.message); }
+}
+
+async function deleteFee(id) {
+    if (!confirm('Delete this fee record?')) return;
+    try {
+        await API.delete(`/fees/${id}`);
+        Toast.success('Fee record deleted');
+        await loadData();
+    } catch (err) { Toast.error(err.message); }
+}
+
+loadData();
+</script>
+    <script src="/js/pwa.js"></script>
+</body>
+</html>
